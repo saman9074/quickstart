@@ -18,6 +18,7 @@ This package is developed by [Saman9074 (Ali Abdi)](https://github.com/saman9074
 * **Automated Artisan Commands:** Executes migrations, seeders, and other post-installation commands.
 * **Installation Lock:** Prevents re-running the installer once the application is set up.
 * **Customizable:** Configuration, views, and language files can be published and modified.
+* **theme:** Theme support (currently default and Quickstart-Nova themes) 
 
 ## Requirements
 
@@ -50,6 +51,7 @@ After publishing, the main configuration file will be located at `config/quickst
 
 Key options include:
 
+* **`theme`**: Default Theme (currently , `default` or `quickstart-nova`).
 * **`supported_locales`**: Array of supported languages (e.g., `['en' => 'quickstart::installer.language_english', 'fa' => 'quickstart::installer.language_persian']`).
 * **`default_locale`**: Default installer language (e.g., `en`).
 * **`route_prefix`**: URL prefix for installer routes (default: `quickstart-install`).
