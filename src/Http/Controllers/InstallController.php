@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Saman9074\Quickstart\Http\Middleware\RedirectIfInstalled;
 use Saman9074\Quickstart\Http\Middleware\SetInstallerLocale;
+use Illuminate\Support\Facades\View as ViewFacade;
 
 class InstallController extends Controller
 {
@@ -329,58 +330,74 @@ class InstallController extends Controller
      */
     protected function view(string $viewNameSuffix, array $data = [])
     {
-        $defaultViewPath = "quickstart::installer.steps.{$viewNameSuffix}";
-        $stepsConfig = Config::get('quickstart.steps', []);
+        $activeTheme = Config::get('quickstart.theme', 'default');
+        $defaultTheme = 'default';
 
-        // به درستی کلید رشته‌ای مرحله فعلی را پیدا می‌کند
+        // Construct view paths
+        $themeStepView = "installer.themes.{$activeTheme}.steps.{$viewNameSuffix}";
+        $defaultStepView = "installer.themes.{$defaultTheme}.steps.{$viewNameSuffix}";
+
+        // Determine which step view to render (selected theme or fallback to default)
+        $viewToRender = ViewFacade::exists("quickstart::{$themeStepView}") ? $themeStepView : $defaultStepView;
+
+        // Determine layout path with fallback
+        $themeLayoutPath = "installer.themes.{$activeTheme}.layouts.main";
+        $defaultLayoutPath = "installer.themes.{$defaultTheme}.layouts.main";
+        $layoutPath = ViewFacade::exists("quickstart::{$themeLayoutPath}") ? $themeLayoutPath : $defaultLayoutPath;
+
+
+        $stepsConfig = Config::get('quickstart.steps', []);
         $currentStepStringKey = null;
         foreach ($stepsConfig as $key => $details) {
             if (isset($details['view_suffix']) && $details['view_suffix'] === $viewNameSuffix) {
-                $currentStepStringKey = $key; // مثلاً 'welcome' یا 'requirements'
+                $currentStepStringKey = $key;
                 break;
             }
         }
-        // اگر view_suffix پیدا نشد ولی viewNameSuffix مستقیماً با یک کلید مطابقت داشت
         if ($currentStepStringKey === null && isset($stepsConfig[$viewNameSuffix])) {
             $currentStepStringKey = $viewNameSuffix;
         }
 
-        $allSteps = []; // این یک آرایه انجمنی خواهد بود: ['welcome' => [...], 'requirements' => [...], ...]
+        $allSteps = [];
         if ($stepsConfig && is_array($stepsConfig)) {
-           $allSteps = array_map(function($stepDetails, $stepKey) { // $stepKey اینجا 'welcome', 'requirements' و ... است
+           $allSteps = array_map(function($stepDetails, $stepKey) use ($activeTheme, $defaultTheme) {
                $titleKey = $stepDetails['title_key'] ?? ('quickstart::installer.step_' . $stepKey . '_title');
                return [
-                   'key' => $stepKey, // این کلید رشته‌ای است
-                   'title' => __($titleKey), // عنوان ترجمه شده
-                   'route' => route('quickstart.install.' . ($stepDetails['view_suffix'] ?? $stepKey))
+                   'key' => $stepKey,
+                   'title' => __($titleKey),
+                   'route' => route('quickstart.install.' . ($stepDetails['view_suffix'] ?? $stepKey)),
+                   // Pass theme info for each step if needed for dynamic includes later
+                   // 'theme_base_path' => "quickstart::installer.themes.{$activeTheme}"
                ];
            }, $stepsConfig, array_keys($stepsConfig));
         }
 
-        $currentStepNumericalIndex = false; // این اندیس عددی 0-based مرحله فعلی است
+        $currentStepNumericalIndex = false;
         if ($currentStepStringKey !== null) {
-             $orderedStepKeys = array_keys($stepsConfig); // مثلاً: ['welcome', 'requirements', 'permissions', ...]
-             $currentStepNumericalIndex = array_search($currentStepStringKey, $orderedStepKeys); // مثلاً اگر $currentStepStringKey برابر 'permissions' باشد، این مقدار 2 خواهد بود
+             $orderedStepKeys = array_keys($stepsConfig);
+             $currentStepNumericalIndex = array_search($currentStepStringKey, $orderedStepKeys);
         }
         
         $pageTitleData = $data['pageTitle'] ?? '';
-        // اطمینان از اینکه pageTitleData از کلید ترجمه صحیح خوانده می‌شود
         if (empty($pageTitleData) && $currentStepStringKey !== null && isset($stepsConfig[$currentStepStringKey]['title_key'])) {
              $pageTitleData = __(Config::get('quickstart.steps.'.$currentStepStringKey.'.title_key', 'quickstart::installer.step_'.$currentStepStringKey.'_title'));
-        } elseif (empty($pageTitleData) && $currentStepStringKey !== null && isset($stepsConfig[$currentStepStringKey])) { // فال‌بک اگر title_key تنظیم نشده باشد ولی کلید مرحله وجود داشته باشد
-             $pageTitleData = __( 'quickstart::installer.step_'.$currentStepStringKey.'_title'); // فرض بر اینکه کلید ترجمه به صورت step_KEY_title وجود دارد
-        } elseif (empty($pageTitleData)) { // فال‌بک نهایی
+        } elseif (empty($pageTitleData) && $currentStepStringKey !== null && isset($stepsConfig[$currentStepStringKey])) {
+             $pageTitleData = __( 'quickstart::installer.step_'.$currentStepStringKey.'_title');
+        } elseif (empty($pageTitleData)) {
              $pageTitleData = __('quickstart::installer.default_page_title');
         }
 
-
         $viewData = array_merge($data, [
-            'allSteps' => $allSteps, // آرایه انجمنی مراحل
-            'currentStepKey' => $currentStepStringKey, // کلید رشته‌ای مرحله فعلی
-            'currentStepIndex' => $currentStepNumericalIndex, // اندیس عددی 0-based مرحله فعلی
+            'allSteps' => $allSteps,
+            'currentStepKey' => $currentStepStringKey,
+            'currentStepIndex' => $currentStepNumericalIndex,
             'pageTitle' => $pageTitleData,
+            'active_theme' => $activeTheme, // Pass the active theme name to all views
+            'layout_path' => 'quickstart::'.$layoutPath, // Pass the determined layout path
         ]);
 
-        return view($defaultViewPath, $viewData);
+        // The view helper in Laravel automatically prepends the namespace if not present,
+        // so we just need the path relative to the 'views' directory registered for the namespace.
+        return view("quickstart::{$viewToRender}", $viewData);
     }
 }

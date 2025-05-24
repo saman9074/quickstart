@@ -1,4 +1,4 @@
-@extends('quickstart::installer.layouts.main')
+@extends($layout_path)
 
 @section('content')
     <div class="text-center">

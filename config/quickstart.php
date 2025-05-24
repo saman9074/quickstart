@@ -4,6 +4,20 @@
 
 return [
 
+        /*
+    |--------------------------------------------------------------------------
+    | Installer Theme
+    |--------------------------------------------------------------------------
+    |
+    | Specify the theme to be used for the installer UI.
+    | The package provides a 'default' theme. You can create custom themes
+    | by creating a new directory under the package's
+    | `resources/views/installer/themes/` path and then setting its name here.
+    | If a view is not found in the selected theme, it will fallback to the 'default' theme.
+    |
+    */
+    'theme' => 'quickstart-nova', // Available: 'default', 'quickstart-nova' (example)
+
     /*
     |--------------------------------------------------------------------------
     | Supported Locales

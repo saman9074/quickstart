@@ -1,4 +1,4 @@
-@extends('quickstart::installer.layouts.main')
+@extends($layout_path)
 
 @section('content')
     <div class="prose max-w-none {{ __('quickstart::installer.direction') === 'rtl' ? 'text-right' : 'text-left' }}">
@@ -37,6 +37,11 @@
                     'recaptcha'   => ['RECAPTCHA_SITE_KEY', 'RECAPTCHA_SECRET_KEY'],
                 ];
 
+                $envFieldPartialPath = "quickstart::installer.themes.{$active_theme}.partials.env_field";
+                if (!View::exists($envFieldPartialPath)) {
+                    $envFieldPartialPath = "quickstart::installer.themes.default.partials.env_field";
+                }
+
                 // Consolidate all keys from defined groups
                 $groupedKeys = [];
                 foreach ($groups as $groupName => $keysInGroup) {
@@ -57,7 +62,7 @@
                     @foreach($groups['application'] as $key)
                         @if(isset($envFields[$key]))
                             @php $field = $envFields[$key]; @endphp
-                            @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                            @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                         @endif
                     @endforeach
                 </div>
@@ -72,7 +77,7 @@
                      @foreach($groups['database'] as $key)
                         @if(isset($envFields[$key]))
                             @php $field = $envFields[$key]; @endphp
-                            @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                            @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                         @endif
                     @endforeach
                 </div>
@@ -88,7 +93,7 @@
                      @foreach($groups['mail'] as $key)
                         @if(isset($envFields[$key]))
                             @php $field = $envFields[$key]; @endphp
-                            @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                            @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                         @endif
                     @endforeach
                 </div>
@@ -105,7 +110,7 @@
                      @foreach($groups['drivers'] as $key)
                         @if(isset($envFields[$key]))
                             @php $field = $envFields[$key]; @endphp
-                            @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                            @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                         @endif
                     @endforeach
                 </div>
@@ -122,7 +127,7 @@
                      @foreach($groups['redis'] as $key)
                         @if(isset($envFields[$key]))
                             @php $field = $envFields[$key]; @endphp
-                            @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                            @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                         @endif
                     @endforeach
                 </div>
@@ -139,7 +144,7 @@
                      @foreach($groups['recaptcha'] as $key)
                         @if(isset($envFields[$key]))
                             @php $field = $envFields[$key]; @endphp
-                            @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                            @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                         @endif
                     @endforeach
                 </div>
@@ -155,7 +160,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-4">
                     @foreach($otherFields as $key => $fieldConfig) {{-- Iterate over $otherFields which contains key => config --}}
                         @php $field = $fieldConfig; @endphp {{-- $field is already the config array --}}
-                        @include('quickstart::installer.partials.env_field', compact('key', 'field', 'currentEnvValues'))
+                        @include($envFieldPartialPath, compact('key', 'field', 'currentEnvValues'))
                     @endforeach
                 </div>
             </fieldset>
