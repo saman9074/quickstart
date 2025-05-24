@@ -51,7 +51,7 @@ After publishing, the main configuration file will be located at `config/quickst
 
 Key options include:
 
-* **`theme`**: Default Theme (currently , `default` or `quickstart-nova`).
+* **`theme`**: Default Theme (currently , `default` or `quickstart-nova` or `persian-gulf`).
 * **`supported_locales`**: Array of supported languages (e.g., `['en' => 'quickstart::installer.language_english', 'fa' => 'quickstart::installer.language_persian']`).
 * **`default_locale`**: Default installer language (e.g., `en`).
 * **`route_prefix`**: URL prefix for installer routes (default: `quickstart-install`).

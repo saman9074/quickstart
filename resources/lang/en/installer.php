@@ -11,6 +11,9 @@ return [
     'error_title'                     => 'Error!',
     'footer_copyright_fallback_app_name' => 'Your Application',
     'footer_powered_by'               => 'Powered by Quickstart Package.',
+    'persian_gulf_subtitle'          => 'An Installer Inspired by the Azure Waters of the Persian Gulf',
+    'persian_gulf_poem_line1'        => 'Waves may rise and fall, but the name “Persian Gulf” stands forever.',
+    'persian_gulf_poem_line2'        => '',
 
     // Language Switcher
     'language_select_label'           => 'Select Language',

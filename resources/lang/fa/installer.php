@@ -11,6 +11,9 @@ return [
     'error_title'                     => 'خطا!',
     'footer_copyright_fallback_app_name' => 'برنامه شما',
     'footer_powered_by'               => 'ارائه شده توسط پکیج Quickstart.',
+    'persian_gulf_subtitle'          => 'نصب‌کننده‌ای با الهام از آب‌های نیلگون خلیج همیشه فارس',
+    'persian_gulf_poem_line1'        => 'خلیج فارس، ای نگین آبی ایران،',
+    'persian_gulf_poem_line2'        => 'نامت بلند باد، تا ابد جاویدان.',
 
     // انتخاب‌گر زبان
     'language_select_label'           => 'انتخاب زبان',
