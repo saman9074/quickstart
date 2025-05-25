@@ -3,7 +3,9 @@
 namespace Saman9074\Quickstart;
 
 use Illuminate\Support\ServiceProvider;
-use Saman9074\Quickstart\Commands\InstallCommand; // This line will be added later for command registration
+use Illuminate\Support\Facades\File; // Added
+use Illuminate\Support\Facades\Config; // Added
+use Saman9074\Quickstart\Commands\InstallCommand;
 
 class QuickstartServiceProvider extends ServiceProvider
 {
@@ -14,10 +16,14 @@ class QuickstartServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // In this method, services and classes are usually bound to the Service Container.
-        // For example, if your package has specific classes you want to be accessible via Dependency Injection.
+        $installedFlagPath = storage_path(Config::get('quickstart.installed_flag_file', 'installed.flag'));
 
-        // Merge the package's default config file with the user's published config file.
+        // If the installed flag file exists, do nothing in the register method.
+        if (File::exists($installedFlagPath)) {
+            return;
+        }
+
+        // Merge package configuration
         $this->mergeConfigFrom(
             __DIR__.'/../config/quickstart.php', 'quickstart'
         );
@@ -30,59 +36,54 @@ class QuickstartServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // The boot method is called after all other service providers have been registered.
-        // This is the best place to load and register the following:
+        $installedFlagPath = storage_path(Config::get('quickstart.installed_flag_file', 'installed.flag'));
 
-        // 1. Register commands
+        // If the installed flag file exists, do nothing in the boot method.
+        // This effectively disables the installer's routes, views, commands, etc.
+        if (File::exists($installedFlagPath)) {
+            return;
+        }
+
+        // Load package routes
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+
+        // Load package views
+        // Ensure your views are in resources/views and referenced like: view('quickstart::installer.themes.default.steps.welcome')
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'quickstart');
+
+        // Load package translations
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'quickstart');
+
+        // Register package commands
         if ($this->app->runningInConsole()) {
             $this->commands([
-                InstallCommand::class, // This line will be uncommented later for command registration
+                InstallCommand::class,
             ]);
         }
 
-        // 2. Load routes (if your package has web or API routes)
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        // Define publishable assets
+        if ($this->app->runningInConsole()) {
+            // Publish config file
+            $this->publishes([
+                __DIR__.'/../config/quickstart.php' => config_path('quickstart.php'),
+            ], 'quickstart-config');
 
-        // 3. Load views
-        // Path to your package's view files
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'quickstart');
-        // 'quickstart' is the namespace used to access package views (e.g., view('quickstart::installer.index'))
+            // Publish views
+            $this->publishes([
+                __DIR__.'/../resources/views/installer' => resource_path('views/vendor/quickstart/installer'),
+            ], 'quickstart-views');
 
-        // 4. Load translation files
-        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'quickstart');
-        // Usage: __('quickstart::installer.welcome')
+            // Publish language files
+            $this->publishes([
+                __DIR__.'/../resources/lang' => $this->app->langPath('vendor/quickstart'),
+            ], 'quickstart-lang');
 
-        // 5. Define publishable assets
-        // This allows users to copy config files, views, migrations, etc., to their main application.
-
-        // Publish config file
-        $this->publishes([
-            __DIR__.'/../config/quickstart.php' => config_path('quickstart.php'),
-        ], 'quickstart-config'); // 'quickstart-config' tag for group publishing
-
-        $this->publishes([
-            __DIR__.'/../resources/lang' => lang_path('vendor/quickstart'),
-        ], 'quickstart-lang'); // تگ برای انتشار گروهی
-
-        // Publish views (example)
-        /*
-        $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/quickstart'),
-        ], 'quickstart-views');
-        */
-
-        // Publish language files (example)
-        /*
-        $this->publishes([
-            __DIR__.'/../resources/lang' => resource_path('lang/vendor/quickstart'),
-        ], 'quickstart-lang');
-        */
-
-        // Publish Assets (example)
-        /*
-        $this->publishes([
-            __DIR__.'/../resources/assets' => public_path('vendor/quickstart'),
-        ], 'quickstart-assets');
-        */
+            // Example for publishing assets (e.g., CSS, JS for themes if not using CDN)
+            /*
+            $this->publishes([
+                __DIR__.'/../resources/assets' => public_path('vendor/quickstart'),
+            ], 'quickstart-assets');
+            */
+        }
     }
 }
