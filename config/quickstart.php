@@ -16,7 +16,7 @@ return [
     | If a view is not found in the selected theme, it will fallback to the 'default' theme.
     |
     */
-    'theme' => 'quickstart-nova', // Available: 'default', 'quickstart-nova' (example)
+    'theme' => 'persian-gulf', // Available: 'default', 'quickstart-nova' (example)
 
     /*
     |--------------------------------------------------------------------------
@@ -44,7 +44,7 @@ return [
     | This value should be one of the keys defined in 'supported_locales'.
     |
     */
-    'default_locale' => 'en',
+    'default_locale' => 'fa',
 
     /*
     |--------------------------------------------------------------------------
@@ -57,15 +57,18 @@ return [
     |
     */
 
+	'installer_session_cookie' => 'quickstart_installer_session',
     // Route settings for the installer pages
-    'route_prefix' => 'quickstart-install', // URL prefix for installer routes
-    'route_middleware' => ['web'],         // Middleware group for installer routes
+    'route_prefix' => 'install', // URL prefix for installer routes
+    'route_middleware' => [   
+        //'web', 
+    ],
 
     // Translation key for the main welcome message displayed in the installer header.
     'welcome_message_key' => 'quickstart::installer.header_title_fallback',
 
     // Minimum required PHP version for the application.
-    'required_php_version' => '8.1.0',
+    'required_php_version' => '8.2.0',
 
     // A list of PHP extensions required by the application.
     'required_php_extensions' => [
@@ -75,16 +78,16 @@ return [
         'json',
         'mbstring',
         'openssl',
-        'pdo',
         'tokenizer',
         'xml',
+        'mysqli',
     ],
 
     // A list of directories that need to be writable by the web server.
     'writable_directories' => [
-        'storage/framework',
-        'storage/logs',
-        'bootstrap/cache',
+        '/../laravel/storage/framework',
+        '/../laravel/storage/logs',
+        '/../laravel/bootstrap/cache',
     ],
 
     /*
@@ -388,12 +391,13 @@ return [
         'key:generate',      // Generates the application key (if not already set).
         'migrate --force',   // Runs database migrations. The --force flag is used to run without confirmation, suitable for automated processes.
         // 'db:seed',        // Example: Runs all main database seeders.
+        'module:seed --class=AdminDatabaseSeeder Admin', // Example: Runs the Admin module's database seeder.
         // 'db:seed --class=YourSpecificSeeder', // Example: Runs a specific seeder class.
-        // 'storage:link',   // Example: Creates the symbolic link for public storage.
-        // 'optimize:clear', // Example: Clears all compiled files (routes, config, views, events).
-        // 'config:cache',   // Example: Caches the configuration (typically for production).
-        // 'route:cache',    // Example: Caches the routes (typically for production).
-        // 'view:cache',     // Example: Caches the Blade views (typically for production).
+        'storage:link',   // Example: Creates the symbolic link for public storage.
+        'optimize:clear', // Example: Clears all compiled files (routes, config, views, events).
+        'config:cache',   // Example: Caches the configuration (typically for production).
+        'route:cache',    // Example: Caches the routes (typically for production).
+        'view:cache',     // Example: Caches the Blade views (typically for production).
     ],
 
     /*

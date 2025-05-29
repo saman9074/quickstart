@@ -10,17 +10,16 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Saman9074\Quickstart\Http\Middleware\RedirectIfInstalled;
-use Saman9074\Quickstart\Http\Middleware\SetInstallerLocale;
+use Illuminate\Support\Facades\Log; // Ensure Log facade is imported
 use Illuminate\Support\Facades\View as ViewFacade;
+
 
 class InstallController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(SetInstallerLocale::class);
-        $this->middleware(RedirectIfInstalled::class);
+        // Middleware is now handled in the package's routes/web.php
+        // using a custom middleware stack.
     }
 
     public function setLocale(Request $request)
@@ -229,15 +228,31 @@ class InstallController extends Controller
 
         try {
             $connectionName = Config::get('database.default');
-            DB::purge($connectionName);
+            DB::purge($connectionName); // Ensure fresh connection for migrations/seeds
 
             $postInstallCommands = Config::get('quickstart.post_install_commands', []);
+            Log::info("Quickstart Installer: Starting post-installation commands.", ['commands' => $postInstallCommands]);
+
             foreach ($postInstallCommands as $command) {
-                Artisan::call($command);
+                Log::info("Quickstart Installer: Attempting to run command '{$command}'");
+                $exitCode = Artisan::call($command); // Execute the command
+                $output = Artisan::output();      // Get the output of the command
+
+                if ($exitCode === 0) {
+                    Log::info("Quickstart Installer: Command '{$command}' executed successfully.", ['output' => $output]);
+                } else {
+                    Log::error("Quickstart Installer: Command '{$command}' failed with exit code {$exitCode}.", ['output' => $output]);
+                    // Optionally, throw an exception to stop the process and show a generic error,
+                    // or collect errors and display them. For now, we log and continue.
+                    // throw new \Exception("Command '{$command}' failed. See logs for details.");
+                }
             }
             $this->createInstalledFlagFile();
+            Log::info("Quickstart Installer: Post-installation commands completed and installed flag created.");
+
         } catch (\Exception $e) {
-            Log::error("Quickstart Installer - Finalization Error: " . $e->getMessage());
+            Log::error("Quickstart Installer - Finalization Error: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            // Use the translated error message, but also append the specific command if possible
             $errorMessage = __('quickstart::installer.finalize_error') . ' (' . $e->getMessage() . ')';
             return Redirect::route('quickstart.install.finalize')
                            ->withErrors(['finalize_error' => $errorMessage]);
@@ -321,30 +336,18 @@ class InstallController extends Controller
         Artisan::call('config:clear');
     }
 
-    /**
-     * Helper to render a view with common layout data.
-     *
-     * @param string $viewNameSuffix Suffix for the view name (e.g., 'welcome', 'requirements')
-     * @param array $data Additional data for the view
-     * @return \Illuminate\Contracts\View\View
-     */
     protected function view(string $viewNameSuffix, array $data = [])
     {
         $activeTheme = Config::get('quickstart.theme', 'default');
         $defaultTheme = 'default';
 
-        // Construct view paths
         $themeStepView = "installer.themes.{$activeTheme}.steps.{$viewNameSuffix}";
         $defaultStepView = "installer.themes.{$defaultTheme}.steps.{$viewNameSuffix}";
-
-        // Determine which step view to render (selected theme or fallback to default)
         $viewToRender = ViewFacade::exists("quickstart::{$themeStepView}") ? $themeStepView : $defaultStepView;
 
-        // Determine layout path with fallback
         $themeLayoutPath = "installer.themes.{$activeTheme}.layouts.main";
         $defaultLayoutPath = "installer.themes.{$defaultTheme}.layouts.main";
         $layoutPath = ViewFacade::exists("quickstart::{$themeLayoutPath}") ? $themeLayoutPath : $defaultLayoutPath;
-
 
         $stepsConfig = Config::get('quickstart.steps', []);
         $currentStepStringKey = null;
@@ -366,8 +369,6 @@ class InstallController extends Controller
                    'key' => $stepKey,
                    'title' => __($titleKey),
                    'route' => route('quickstart.install.' . ($stepDetails['view_suffix'] ?? $stepKey)),
-                   // Pass theme info for each step if needed for dynamic includes later
-                   // 'theme_base_path' => "quickstart::installer.themes.{$activeTheme}"
                ];
            }, $stepsConfig, array_keys($stepsConfig));
         }
@@ -392,12 +393,10 @@ class InstallController extends Controller
             'currentStepKey' => $currentStepStringKey,
             'currentStepIndex' => $currentStepNumericalIndex,
             'pageTitle' => $pageTitleData,
-            'active_theme' => $activeTheme, // Pass the active theme name to all views
-            'layout_path' => 'quickstart::'.$layoutPath, // Pass the determined layout path
+            'active_theme' => $activeTheme,
+            'layout_path' => 'quickstart::'.$layoutPath,
         ]);
 
-        // The view helper in Laravel automatically prepends the namespace if not present,
-        // so we just need the path relative to the 'views' directory registered for the namespace.
         return view("quickstart::{$viewToRender}", $viewData);
     }
 }

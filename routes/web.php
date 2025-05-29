@@ -1,53 +1,52 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Saman9074\Quickstart\Http\Controllers\InstallController; // We will create this controller next
+    use Illuminate\Support\Facades\Route;
+    use Illuminate\Support\Facades\Config;
+    use Saman9074\Quickstart\Http\Controllers\InstallController;
 
-/*
-|--------------------------------------------------------------------------
-| Quickstart Installer Routes
-|--------------------------------------------------------------------------
-|
-| These routes are loaded by the QuickstartServiceProvider.
-| They handle the web-based installation process.
-|
-*/
+    // میدل‌ویرهای مورد نیاز برای نصب‌کننده
+    // شما باید namespace صحیح این میدل‌ویرها را بر اساس پروژه لاراولی که کاربر استفاده می‌کند، در نظر بگیرید
+    // یا از کلاس‌های معادل در Illuminate استفاده کنید اگر در App نیستند.
+    // برای سادگی، فرض می‌کنیم کاربر از ساختار پیش‌فرض لاراول استفاده می‌کند.
+    // در یک پکیج واقعی، بهتر است این وابستگی‌ها را به حداقل برسانید یا روشی برای پیکربندی آن‌ها توسط کاربر فراهم کنید.
 
-// Get the route prefix and middleware from the config file
-$prefix = config('quickstart.route_prefix', 'quickstart-install');
-$middleware = config('quickstart.route_middleware', ['web']);
+    $installerMiddlewareStack = [
+        // ۱. میدل‌ویر شما برای تنظیم درایور سشن به 'file' و کوکی ایزوله
+        \Saman9074\Quickstart\Http\Middleware\InstallerSessionSettings::class,
 
-Route::group(['prefix' => $prefix, 'as' => 'quickstart.install.', 'middleware' => $middleware], function () {
+        // ۲. میدل‌ویرهای ضروری که معمولاً در گروه 'web' هستند
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, // یا App\Http\Middleware\VerifyCsrfToken::class
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
 
-    // Route to show the initial welcome/start page or redirect to the first step
-    Route::get('/', [InstallController::class, 'showWelcome'])->name('welcome');
+        // ۳. میدل‌ویرهای اختصاصی دیگر پکیج شما
+        \Saman9074\Quickstart\Http\Middleware\SetInstallerLocale::class,
+        \Saman9074\Quickstart\Http\Middleware\RedirectIfInstalled::class,
+    ];
 
-    // Example routes for different steps based on the 'steps' config
-    // We can make this more dynamic later or define each step explicitly.
+    Route::group([
+        'prefix' => Config::get('quickstart.route_prefix', 'quickstart-install'),
+        'as' => 'quickstart.install.',
+        'middleware' => $installerMiddlewareStack
+    ], function () {
+        Route::get('/', [InstallController::class, 'showWelcome'])->name('welcome');
+        Route::post('/set-locale', [InstallController::class, 'setLocale'])->name('setLocale');
 
-    // Step 1: Server Requirements Check
-    Route::get('/requirements', [InstallController::class, 'showRequirements'])->name('requirements');
-    Route::post('/requirements', [InstallController::class, 'checkRequirements']);
+        Route::get('/requirements', [InstallController::class, 'showRequirements'])->name('requirements');
+        Route::post('/requirements', [InstallController::class, 'checkRequirements']);
 
-    // Step 2: Folder Permissions Check
-    Route::get('/permissions', [InstallController::class, 'showPermissions'])->name('permissions');
-    Route::post('/permissions', [InstallController::class, 'checkPermissions']);
+        Route::get('/permissions', [InstallController::class, 'showPermissions'])->name('permissions');
+        Route::post('/permissions', [InstallController::class, 'checkPermissions']);
 
-    // Step 3: Environment Configuration (.env setup)
-    Route::get('/environment', [InstallController::class, 'showEnvironmentSetup'])->name('environment');
-    Route::post('/environment', [InstallController::class, 'saveEnvironmentSetup']);
+        Route::get('/environment', [InstallController::class, 'showEnvironmentSetup'])->name('environment');
+        Route::post('/environment', [InstallController::class, 'saveEnvironmentSetup']);
 
-    // Step 4: Run final installation tasks (migrations, seeds, etc.)
-    Route::get('/finalize', [InstallController::class, 'showFinalize'])->name('finalize');
-    Route::post('/finalize', [InstallController::class, 'runFinalizeTasks']);
+        Route::get('/finalize', [InstallController::class, 'showFinalize'])->name('finalize');
+        Route::post('/finalize', [InstallController::class, 'runFinalizeTasks']);
 
-    // Step 5: Installation Finished Page
-    Route::get('/finished', [InstallController::class, 'showFinished'])->name('finished');
-
-    // A general route to handle steps dynamically based on a slug, if preferred
-    // Route::get('/step/{stepSlug}', [InstallController::class, 'showStep'])->name('step');
-    // Route::post('/step/{stepSlug}', [InstallController::class, 'processStep']);
-
-    Route::post('/set-locale', [InstallController::class, 'setLocale'])->name('setLocale');
-
-});
+        Route::get('/finished', [InstallController::class, 'showFinished'])->name('finished');
+    });
+    
